@@ -17,9 +17,9 @@ import { OllamaEmbeddings } from '@langchain/ollama'
     async embedSingle(text: string) {
       const vector = await this.embeddings.embedQuery(text)
       return {
-        text,// 原始文本
-        dimension: vector.length,//
-        vector,//文本对应的向量数组
+        text,
+        dimension: vector.length,
+        vector,
       }
     }
 
