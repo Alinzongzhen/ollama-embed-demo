@@ -1,12 +1,12 @@
 import { Body, Controller, Post, Delete, Get, Param, Query } from '@nestjs/common'
-import { RagChromaService }   from './rag-chroma.service'
+import { RagService, }   from './rag.service'
 import { RagPgvectorService } from './rag-pgvector.service'
 import { AddDocumentsDto, SearchDto, QueryDto } from './dto/rag.dto'
 
 @Controller('rag')
   export class RagController {
     constructor(
-      private readonly chromaSvc:   RagChromaService,
+      private readonly ragSvc:   RagService,
       private readonly pgvectorSvc: RagPgvectorService,
     ) {}
 
@@ -14,14 +14,14 @@ import { AddDocumentsDto, SearchDto, QueryDto } from './dto/rag.dto'
     // POST /rag/chroma/documents
     @Post('chroma/documents')
     addChromaDocs(@Body() dto: AddDocumentsDto) {
-      return this.chromaSvc.addDocuments(dto)
+      return this.ragSvc.addDocuments(dto)
     }
 
-    // // POST /rag/chroma/search
-    // @Post('chroma/search')
-    // searchChroma(@Body() dto: SearchDto) {
-    //   return this.chromaSvc.search(dto)
-    // }
+    // POST /rag/chroma/search
+    @Post('chroma/search')
+    searchChroma(@Body() dto: SearchDto) {
+      return this.ragSvc.search(dto)
+    }
 
     // // POST /rag/chroma/query
     // @Post('chroma/query')

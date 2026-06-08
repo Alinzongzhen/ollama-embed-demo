@@ -1,3 +1,4 @@
+import 'dotenv/config';
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import * as fs from 'fs';
@@ -19,11 +20,11 @@ async function bootstrap() {
   // 全局 API 前缀
   app.setGlobalPrefix('api');
 
-  // 跨域配置
+  // 跨域配置（开发环境宽松）
   app.enableCors({
-    origin: true,                       // 允许所有来源（开发环境）
-    methods: 'GET,POST,PUT,DELETE',
-    credentials: true,
+    origin: '*',
+    methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
+    allowedHeaders: 'Content-Type,Authorization',
   });
 
   await app.listen(process.env.PORT ?? 3000);

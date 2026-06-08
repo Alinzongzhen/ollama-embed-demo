@@ -1,11 +1,10 @@
 import { Module } from '@nestjs/common';
 import { RagController } from './rag.controller';
-import { RagService } from './rag.service';
-import { RagChromaService } from './rag-chroma.service';
-
+import { RagService } from './rag.service';     
+import { RagPgvectorService } from './rag-pgvector.service';
 
 @Module({
   controllers: [RagController],
-  providers: [RagService, RagChromaService],
+  providers: [RagService, RagPgvectorService],
 })
 export class RagModule {}
