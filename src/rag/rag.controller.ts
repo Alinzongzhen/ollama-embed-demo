@@ -23,23 +23,23 @@ import { AddDocumentsDto, SearchDto, QueryDto } from './dto/rag.dto'
       return this.ragSvc.search(dto)
     }
 
-    // // POST /rag/chroma/query
-    // @Post('chroma/query')
-    // queryChroma(@Body() dto: QueryDto) {
-    //   return this.chromaSvc.query(dto)
-    // }
+    // POST /rag/chroma/query
+    @Post('chroma/query')
+    queryChroma(@Body() dto: QueryDto) {
+      return this.ragSvc.query(dto)
+    }
 
-    // // GET /rag/chroma/collection/:name
-    // @Get('chroma/collection/:name')
-    // chromaCollectionInfo(@Param('name') name: string) {
-    //   return this.chromaSvc.collectionInfo(name)
-    // }
+    // GET /rag/chroma/collection/:name
+    @Get('chroma/collection/:name')
+    chromaCollectionInfo(@Param('name') name: string) {
+      return this.ragSvc.collectionInfo(name)
+    }
 
-    // // DELETE /rag/chroma/collection/:name
-    // @Delete('chroma/collection/:name')
-    // deleteChromaCollection(@Param('name') name: string) {
-    //   return this.chromaSvc.deleteCollection(name)
-    // }
+    // DELETE /rag/chroma/collection/:name
+    @Delete('chroma/collection/:name')
+    deleteChromaCollection(@Param('name') name: string) {
+      return this.ragSvc.deleteCollection(name)
+    }
 
     // // ── pgvector 接口 ─────────────────────────────────────
     // // POST /rag/pgvector/documents
