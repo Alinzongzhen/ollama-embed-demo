@@ -9,7 +9,7 @@ export class LanggraphService implements OnModuleInit {
 
     async onModuleInit() {
         const llm = new ChatOllama({
-            model: 'qwen2.5:0.5b',       // 模型名称
+            model: 'qwen2.5:1.5b',       // 模型名称换参数高一点模型要不然推理不够
             baseUrl: 'http://localhost:11434', // Ollama 服务地址
             temperature: 0.3,            // 生成文本随机性，默认值为 0.7
             think: false,                // 是否开启思考模式
@@ -36,9 +36,9 @@ export class LanggraphService implements OnModuleInit {
             .compile();// 编译图
         
         this.memoryGraph = new StateGraph(MessagesAnnotation)
-            .addNode('memoryCallModel', memoryCallModel)
-            .addEdge(START, 'memoryCallModel')
-            .addEdge('memoryCallModel', END)
+            .addNode('callModel', memoryCallModel)
+            .addEdge(START, 'callModel')
+            .addEdge('callModel', END)
             .compile({ checkpointer: new MemorySaver() }); // 传入 checkpointer 开启记忆
     }
      async simpleChat(message: string): Promise<string> {
@@ -51,12 +51,15 @@ export class LanggraphService implements OnModuleInit {
       return result.messages.at(-1).content as string
   }
   async memoryChat(message: string, threadId: string): Promise<string> {
-    const result = await this.memoryGraph.invoke({
-      messages: [
-      
-        new HumanMessage(message),
-      ]
-    },{ configurable: { thread_id: threadId } })// 设置线程 ID
-    return result.messages.at(-1).content as string
+    const config = { configurable: { thread_id: threadId } };
+
+    // MessagesAnnotation 的 reducer 会自动将 input 追加到持久化状态，不会覆盖历史
+    const result = await this.memoryGraph.invoke(
+      { messages: [new HumanMessage(message)] },
+      config,
+    );
+
+    const lastMessage = result.messages.at(-1);
+    return typeof lastMessage?.content === 'string' ? lastMessage.content : '';
   }
 }
