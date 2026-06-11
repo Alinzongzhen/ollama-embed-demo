@@ -1,4 +1,4 @@
-import { Controller, Post, Body} from '@nestjs/common';
+import { Controller, Post, Body, Get, Param } from '@nestjs/common';
 import { LanggraphService } from './langgraph.service';
 
 @Controller('langgraph')
@@ -14,6 +14,10 @@ export class LanggraphController {
   @Post('memory-chat')
   async memoryChat(@Body() body: { message: string, threadId:string }) {
     return (await this.svc.memoryChat(body.message, body.threadId).then(res => (res)) ) 
+  }
+  @Get('history/:threadId')
+  async history(@Param('threadId') threadId: string) {
+    return (await this.svc.getHistory(threadId).then(res => (res)) ) 
   }
 
 }

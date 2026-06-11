@@ -2,6 +2,7 @@ import { Injectable, OnModuleInit } from '@nestjs/common';
 import { ChatOllama } from '@langchain/ollama';
 import { StateGraph, MessagesAnnotation, END, START,MemorySaver } from '@langchain/langgraph';
 import { HumanMessage, SystemMessage } from '@langchain/core/messages'
+import { Console } from 'console';
 @Injectable()
 export class LanggraphService implements OnModuleInit {
     private simpleGraph: any;
@@ -25,7 +26,6 @@ export class LanggraphService implements OnModuleInit {
           new SystemMessage('你是专业的 AI 助手，请记住对话上下文。'),
           ...state.messages,   // 展开全部历史，让 LLM 看到完整上下文
         ]
-        console.log(messages,111)
             const response = await llm.invoke(messages);// 调用模型，传入当前状态的消息数组
             return { messages: [response] };// 返回模型回复，封装为数组
         };
@@ -61,5 +61,14 @@ export class LanggraphService implements OnModuleInit {
 
     const lastMessage = result.messages.at(-1);
     return typeof lastMessage?.content === 'string' ? lastMessage.content : '';
+  }
+  async getHistory(threadId: string): Promise<string>{
+    const config = { configurable: { thread_id: threadId } };
+    const result = await this.memoryGraph.invoke({}, config); 
+    return (result?.messages ?? []).map((m: any, i: number) => ({
+    index: i,
+    role:    m._getType?.() === 'human' ? 'user' : 'assistant',
+    content: m.content,
+  }))
   }
 }
