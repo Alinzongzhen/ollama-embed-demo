@@ -1,11 +1,8 @@
 import { Injectable, OnModuleInit } from '@nestjs/common';
 import {ChatOllama} from '@langchain/ollama';
-import { StateGraph, Annotation, MessagesAnnotation, MemorySaver, START, END , Send, Command} from '@langchain/langgraph'
-import { config } from '../config'
-import { SystemMessage, HumanMessage, AIMessage } from '@langchain/core/messages';
-import {ToolNode} from '@langchain/langgraph/prebuilt'
-import { tool} from '@langchain/core/tools'
-import {z} from 'zod'
+import { StateGraph, Annotation, START, END, Send, Command } from '@langchain/langgraph';
+import { config } from '../config';
+import { HumanMessage } from '@langchain/core/messages';
 
 
 // 主图 state： 收集所有字任务结果
@@ -44,11 +41,11 @@ export class ParallelService implements OnModuleInit {
                 new HumanMessage(`把以下任务拆成 3 个独立子任务，每个子任务单独一行，不要编号：\n\n${state.task}`),
             ])
             console.log('拆分结果：', res.content)
-            const subTasks = (res.content as string).split('\n').map(t => t.trim()).filter(Boolean).slice(0, 3);
+            const subTasks = (res.content as string).split('\n').map(t => t.replace(/^\d+[\.\)、]\s*/, '').trim()).filter(Boolean).slice(0, 3);
 
             subTasks.forEach((t, i) => console.log(`子任务 ${i + 1}: ${t}`));
             return new Command({
-                goto: subTasks.map((task, index) => new Send('processSubTask', { task })),
+                goto: subTasks.map((task) => new Send('processSubTask', { task })),
             })
         }
 
@@ -70,12 +67,13 @@ export class ParallelService implements OnModuleInit {
             const text = state.results
                 .map((r, i) => `子任务 ${i + 1}：${r.task}\n结果：${r.result}`)
                 .join('\n\n')
+                // console.log('汇总子任务结果1：', text)
             
             const res = await llm.invoke([
                 new HumanMessage(`根据以下子任务结果，生成 200 字综合报告：\n\n${text}`),
             ])
             console.log('最终报告：', res.content)
-            return { finalReports: res.content as string }
+            return { finalReport: res.content as string }
         }
 
         this.graph = new StateGraph(ParallelState)
@@ -97,7 +95,7 @@ export class ParallelService implements OnModuleInit {
         return {
             subTasks: result.results.map((r: any) => r.task),
             results: result.results,
-            finalReport: result.finalReports,
+            finalReport: result.finalReport,
             totalTime: `${Date.now() - t0}ms`,
         };
     }   
