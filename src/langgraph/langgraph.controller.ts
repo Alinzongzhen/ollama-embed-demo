@@ -4,11 +4,12 @@ import { ArticleService } from './article.service';
 import { ReactAgentService } from './react-agent.service'
 import { RoutingService } from './routing.service'
 import { ParallelService } from './parallel.service'
+import { SupervisorService } from './supervisor.service'
 @Controller('langgraph')
 export class LanggraphController {
 
 
-  constructor(private readonly svc: LanggraphService, private readonly articleSvc: ArticleService, private readonly reactSvc: ReactAgentService, private readonly routingSvc: RoutingService, private readonly parallelSvc: ParallelService ) {}
+  constructor(private readonly svc: LanggraphService, private readonly articleSvc: ArticleService, private readonly reactSvc: ReactAgentService, private readonly routingSvc: RoutingService, private readonly parallelSvc: ParallelService, private readonly supervisorSvc: SupervisorService) {}
 
   @Post('simple-chat')
   async simpleChat(@Body() body: { message: string }) {
@@ -42,6 +43,12 @@ export class LanggraphController {
     parallel(@Body() body: { task: string }) {
       return this.parallelSvc.parallelChat(body.task)
     }
+      // ── 第三章 ──────────────────────────────────────────
+    @Post('supervisor')
+    supervisor(@Body() body: { input: string }) {
+      return this.supervisorSvc.run(body.input)
+    }
+
 
 
 }
