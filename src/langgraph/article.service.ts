@@ -44,6 +44,7 @@ const ArticleState = Annotation.Root({
       const extractKeywords = async (state: typeof ArticleState.State) => {
         const t0 = Date.now()
         const res = await llm.invoke([
+            // 给llm发送提示词
           new HumanMessage(
             `从以下文章提取 5-8 个核心关键词，只输出关键词，逗号分隔，不要其他内容：\n\n${state.article}`
           ),
