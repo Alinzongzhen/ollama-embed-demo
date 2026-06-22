@@ -5,11 +5,14 @@ import { ReactAgentService } from './react-agent.service'
 import { RoutingService } from './routing.service'
 import { ParallelService } from './parallel.service'
 import { SupervisorService } from './supervisor.service'
+import { PipelineService } from './pipeline.service'
+import { CodeReviewService } from './code-review.service'
+
 @Controller('langgraph')
 export class LanggraphController {
 
 
-  constructor(private readonly svc: LanggraphService, private readonly articleSvc: ArticleService, private readonly reactSvc: ReactAgentService, private readonly routingSvc: RoutingService, private readonly parallelSvc: ParallelService, private readonly supervisorSvc: SupervisorService) {}
+  constructor(private readonly svc: LanggraphService, private readonly articleSvc: ArticleService, private readonly reactSvc: ReactAgentService, private readonly routingSvc: RoutingService, private readonly parallelSvc: ParallelService, private readonly supervisorSvc: SupervisorService, private readonly pipelineSvc: PipelineService, private readonly codeReviewSvc: CodeReviewService) {}
 
   @Post('simple-chat')
   async simpleChat(@Body() body: { message: string }) {
@@ -47,6 +50,14 @@ export class LanggraphController {
     @Post('supervisor')
     supervisor(@Body() body: { input: string }) {
       return this.supervisorSvc.run(body.input)
+    }
+     @Post('pipeline')
+    pipeline(@Body() body: { topic: string }) {
+      return this.pipelineSvc.createContent(body.topic)
+    }
+      @Post('code-review')
+    codeReview(@Body() body: { code: string; language?: string }) {
+      return this.codeReviewSvc.review(body.code, body.language)
     }
 
 
