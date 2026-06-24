@@ -7,11 +7,12 @@ import { RoutingService } from './routing.service';
 import { ParallelService } from './parallel.service';
 import { SupervisorService } from './supervisor.service';
 import { PipelineService } from './pipeline.service';
-import { CodeReviewService } from './code-review.service';
+import { CodeReviewService } from './code-review.service';  
+import { EmailApprovalService } from './email-approval.service';
 
 
 @Module({
   controllers: [LanggraphController],
-  providers: [LanggraphService, ArticleService, ReactAgentService, RoutingService, ParallelService, SupervisorService, PipelineService, CodeReviewService],
+  providers: [LanggraphService, ArticleService, ReactAgentService, RoutingService, ParallelService, SupervisorService, PipelineService, CodeReviewService, EmailApprovalService],
 })
 export class LanggraphModule {}
