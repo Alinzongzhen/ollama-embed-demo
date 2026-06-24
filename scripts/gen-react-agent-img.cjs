@@ -1,8 +1,9 @@
 const https = require('https');
 const fs = require('fs');
 const path = require('path');
+const sharp = require('sharp');
 
-const mermaid = `sequenceDiagram
+const mermaidCode = `sequenceDiagram
     participant U as 👤 用户
     participant G as 📊 LangGraph
     participant CM as 🧠 callModel<br/>(LLM 推理)
@@ -14,65 +15,71 @@ const mermaid = `sequenceDiagram
     G->>CK: 通过 thread_id 恢复历史消息
     CK-->>G: 返回消息列表 []
 
-    Note over G,CM: 【第 1 轮】进入 callModel 节点
+    Note over G,CM: 【第 1 轮】进入 callModel
 
-    G->>CM: invoke([SystemMessage(工具说明), HumanMessage(用户问题)])
-    CM->>CM: LLM 推理：需要查天气 → 生成 tool_calls
-    CM-->>G: AIMessage { tool_calls: [{get_weather, 北京}, {get_weather, 上海}] }
+    G->>CM: invoke([SystemMessage, HumanMessage])
+    CM->>CM: LLM 推理 → 生成 tool_calls
+    CM-->>G: AIMessage { tool_calls: [北京, 上海] }
 
-    Note over G,SC: callModel 执行完毕，进入条件路由
+    Note over G,SC: callModel 完毕，进入路由
 
     G->>SC: shouldContinue(state)
-    SC->>SC: last.tool_calls.length > 0 ? 是！
-    SC-->>G: 路由到 "tools" 节点
+    SC->>SC: tool_calls.length > 0 → 是！
+    SC-->>G: 路由到 tools
 
     Note over G,TN: 【工具执行阶段】
 
     G->>TN: ToolNode 解析 tool_calls
-    TN->>TN: 并行执行 get_weather("北京") → "晴，25°C"
-    TN->>TN: 并行执行 get_weather("上海") → "多云，28°C"
-    TN->>TN: 封装为 ToolMessage 追加到 messages
-    TN-->>G: { messages: [ToolMessage(北京), ToolMessage(上海)] }
+    TN->>TN: 并行 get_weather("北京") → 25°C
+    TN->>TN: 并行 get_weather("上海") → 28°C
+    TN-->>G: 返回 ToolMessage × 2
 
-    Note over G,CM: 【第 2 轮】回到 callModel 节点
+    Note over G,CM: 【第 2 轮】回到 callModel
 
-    G->>CM: invoke([SystemMessage, HumanMessage, AIMessage(tool_calls), ToolMessage×2])
-    CM->>CM: LLM 分析数据：北京 25°C vs 上海 28°C
-    CM-->>G: AIMessage { content: "上海更热", tool_calls: [] }
+    G->>CM: invoke([SystemMsg..., ToolMsg×2])
+    CM->>CM: LLM: 北京 25°C vs 上海 28°C
+    CM-->>G: AIMessage { content: "...", tool_calls: [] }
 
-    Note over G,SC: 再次进入条件路由
+    Note over G,SC: 再次进入路由
 
     G->>SC: shouldContinue(state)
-    SC->>SC: last.tool_calls.length > 0 ? 否！
+    SC->>SC: tool_calls.length > 0 → 否！
     SC-->>G: 路由到 END
 
-    G->>CK: 保存当前消息快照（thread_id 索引）
-    G-->>U: 返回 "上海比北京更热一些"`;
+    G->>CK: 保存快照 (thread_id)
+    G-->>U: 返回 "上海比北京更热"`;
 
-// URL-safe base64 编码
-const encoded = Buffer.from(mermaid, 'utf-8')
+const encoded = Buffer.from(mermaidCode, 'utf-8')
   .toString('base64')
   .replace(/\+/g, '-')
   .replace(/\//g, '_');
 
-const url = `https://mermaid.ink/img/${encoded}?type=png`;
-console.log('Downloading PNG from mermaid.ink...');
-
 const outDir = path.resolve(__dirname, '..', 'src', 'langgraph', 'img');
 if (!fs.existsSync(outDir)) fs.mkdirSync(outDir, { recursive: true });
 
-https
-  .get(url, (res) => {
-    const chunks = [];
-    res.on('data', (c) => chunks.push(c));
-    res.on('end', () => {
-      const buf = Buffer.concat(chunks);
-      const outPath = path.join(outDir, 'react-agent-flow.png');
-      fs.writeFileSync(outPath, buf);
-      console.log(`✅ Saved: ${outPath} (${buf.length} bytes)`);
-    });
-  })
-  .on('error', (e) => {
-    console.error('Error:', e.message);
-    process.exit(1);
+// 用 sharp 从 mermaid.ink 的 SVG 生成 PNG，强制白底
+async function main() {
+  // 获取 SVG
+  const svgBuffer = await new Promise((resolve, reject) => {
+    https.get(`https://mermaid.ink/img/${encoded}?type=svg`, (res) => {
+      const chunks = [];
+      res.on('data', (c) => chunks.push(c));
+      res.on('end', () => resolve(Buffer.concat(chunks)));
+    }).on('error', reject);
   });
+
+  // 保存原始 SVG
+  const svgPath = path.join(outDir, 'react-agent-flow.svg');
+  fs.writeFileSync(svgPath, svgBuffer);
+  console.log(`✅ SVG saved: ${svgPath}`);
+
+  // 用 sharp 渲染 SVG → PNG，强制白底
+  const pngPath = path.join(outDir, 'react-agent-flow.png');
+  await sharp(svgBuffer)
+    .flatten({ background: { r: 255, g: 255, b: 255 } })  // 强制白色背景
+    .png()
+    .toFile(pngPath);
+  console.log(`✅ PNG saved: ${pngPath} (white background)`);
+}
+
+main().catch(e => { console.error(e); process.exit(1); });
