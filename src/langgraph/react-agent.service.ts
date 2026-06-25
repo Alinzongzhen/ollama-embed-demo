@@ -57,20 +57,45 @@ const calculatorTool = tool(
 const weatherTool = tool(
   async ({ city }) => {
     console.log(`🌤️ [weatherTool] 收到请求 city="${city}"`)
-    // 归一化城市名：去掉"市""省"等后缀（兼容"北京市"→"北京"）
-    const normalized = city.replace(/[省市]$/, '')
-    console.log(`🌤️ [weatherTool] 归一化后 city="${normalized}"`)
-    // Mock 天气数据，实际项目应替换为真实天气 API 调用
-    const mock: Record<string, string> = {
-      '北京': '晴，25°C，东北风 3 级',
-      '上海': '多云，28°C，东风 2 级',
-      '武汉': '晴，30°C，南风 1 级',
-      '广州': '雷阵雨，32°C，南风 2 级',
+    try {
+      // 1. 地理编码：城市名 → 经纬度（Open-Meteo Geocoding API，免费无 Key）
+      const geoUrl = `https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(city)}&count=1&language=zh`
+      const geoRes = await fetch(geoUrl)
+      const geoData = await geoRes.json() as any
+      if (!geoData.results?.length) {
+        return `${city}：未找到该城市，请检查城市名`
+      }
+      const { latitude, longitude, name, country } = geoData.results[0]
+      console.log(`🌤️ [weatherTool] 地理编码: ${name}, ${country} (${latitude}, ${longitude})`)
+
+      // 2. 获取天气数据（Open-Meteo Weather API，免费无 Key）
+      const weatherUrl = `https://api.open-meteo.com/v1/forecast?latitude=${latitude}&longitude=${longitude}&current=temperature_2m,relative_humidity_2m,wind_speed_10m,weather_code&timezone=auto`
+      const weatherRes = await fetch(weatherUrl)
+      const weatherData = await weatherRes.json() as any
+      const current = weatherData.current
+      if (!current) {
+        return `${city}：天气数据获取失败`
+      }
+
+      // WMO 天气码 → 中文描述
+      const weatherDesc: Record<number, string> = {
+        0: '晴', 1: '大部晴', 2: '多云', 3: '阴',
+        45: '雾', 48: '雾凇', 51: '小毛毛雨', 53: '毛毛雨', 55: '大毛毛雨',
+        61: '小雨', 63: '中雨', 65: '大雨', 71: '小雪', 73: '中雪', 75: '大雪',
+        80: '阵雨', 81: '大阵雨', 82: '暴阵雨', 85: '小阵雪', 86: '大阵雪',
+        95: '雷暴', 96: '冰雹雷暴', 99: '大冰雹雷暴',
+      }
+      const wmoCode = current.weather_code ?? 0
+      const desc = weatherDesc[wmoCode] ?? `天气码${wmoCode}`
+
+      const result = `${name || city}：${desc}，${current.temperature_2m}°C，`
+        + `湿度${current.relative_humidity_2m}%，风速${current.wind_speed_10m}km/h`
+      console.log(`🌤️ [weatherTool] 结果="${result}"`)
+      return result
+    } catch (e: any) {
+      console.error(`🌤️ [weatherTool] API 调用失败:`, e.message)
+      return `${city}：天气查询失败，请稍后重试`
     }
-    // 若城市不在 Mock 数据中，返回默认天气提示
-    const result = mock[normalized] ?? `${city}：晴，22°C，微风`
-    console.log(`🌤️ [weatherTool] 结果="${result}"`)
-    return result
   },
   {
     name:        'get_weather',                            // 工具名称
