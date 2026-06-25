@@ -56,8 +56,10 @@ const calculatorTool = tool(
  */
 const weatherTool = tool(
   async ({ city }) => {
+    console.log(`🌤️ [weatherTool] 收到请求 city="${city}"`)
     // 归一化城市名：去掉"市""省"等后缀（兼容"北京市"→"北京"）
     const normalized = city.replace(/[省市]$/, '')
+    console.log(`🌤️ [weatherTool] 归一化后 city="${normalized}"`)
     // Mock 天气数据，实际项目应替换为真实天气 API 调用
     const mock: Record<string, string> = {
       '北京': '晴，25°C，东北风 3 级',
@@ -66,7 +68,9 @@ const weatherTool = tool(
       '广州': '雷阵雨，32°C，南风 2 级',
     }
     // 若城市不在 Mock 数据中，返回默认天气提示
-    return mock[normalized] ?? `${city}：晴，22°C，微风`
+    const result = mock[normalized] ?? `${city}：晴，22°C，微风`
+    console.log(`🌤️ [weatherTool] 结果="${result}"`)
+    return result
   },
   {
     name:        'get_weather',                            // 工具名称
@@ -74,9 +78,24 @@ const weatherTool = tool(
     schema:      z.object({
       city: z.string().describe('城市名，如：北京、上海、武汉'),//
     }),
+    
   }
 )
-
+// bindTools 后 LLM "看到"的东西：
+// {
+//   "name": "get_weather",
+//   "description": "查询指定城市的当前天气",
+//   "parameters": {
+//     "type": "object",
+//     "properties": {
+//       "city": {
+//         "type": "string",
+//         "description": "城市名，如：北京、上海、武汉"
+//       }
+//     },
+//     "required": ["city"]
+//   }
+// }
 // 汇总所有可用工具，后续会 bind 到 LLM 上
 const tools = [calculatorTool, weatherTool]
 
@@ -113,6 +132,21 @@ export class ReactAgentService implements OnModuleInit {
      * tool_calls 包含：工具 name 和符合 schema 的参数
      */
     const llmWithTools = llm.bindTools(tools)
+    // bindTools 后 LLM "看到"的东西：
+// {
+//   "name": "get_weather",
+//   "description": "查询指定城市的当前天气",
+//   "parameters": {
+//     "type": "object",
+//     "properties": {
+//       "city": {
+//         "type": "string",
+//         "description": "城市名，如：北京、上海、武汉"
+//       }
+//     },
+//     "required": ["city"]
+//   }
+// }
 
     /**
      * ToolNode：LangGraph 预置节点，封装"执行 LLM 返回的 tool_calls"的完整逻辑
@@ -139,6 +173,13 @@ export class ReactAgentService implements OnModuleInit {
       // 调用绑定了工具的 LLM，获取响应（可能是文本答案或 tool_calls）
       const response = await llmWithTools.invoke(messages)
     
+      const toolCalls = (response as AIMessage).tool_calls// 从 LLM 响应中提取 tool_calls 数组
+      if (toolCalls?.length) {
+        console.log(`🔧 [callModel] LLM 请求调用 ${toolCalls.length} 个工具：`, 
+          JSON.stringify(toolCalls.map(t => ({ name: t.name, args: t.args }))))
+      } else {
+        console.log(`💬 [callModel] LLM 直接回复（无工具调用）：${(response.content as string).slice(0, 100)}...`)
+      }
 
       // 将 LLM 响应追加到消息列表返回
       return { messages: [response] }

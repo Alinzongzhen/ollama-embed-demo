@@ -10,7 +10,7 @@ export class LanggraphService implements OnModuleInit {
 
     async onModuleInit() {
         const llm = new ChatOllama({
-            model: 'qwen2.5:1.5b',       // 模型名称换参数高一点模型要不然推理不够
+            model: 'qwen3.5:0.8b',       // 模型名称换参数高一点模型要不然推理不够
             baseUrl: 'http://localhost:11434', // Ollama 服务地址
             temperature: 0.3,            // 生成文本随机性，默认值为 0.7
             think: false,                // 是否开启思考模式

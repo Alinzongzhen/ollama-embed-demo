@@ -49,7 +49,7 @@ export class RagService implements OnModuleInit {
 
     // 初始化聊天模型
     this.chatOllama = new ChatOllama({
-      model: 'qwen2.5:0.5b',
+      model: 'qwen3.5:0.8b',
       baseUrl: 'http://localhost:11434',
       temperature: 0.3,
     });
