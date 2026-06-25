@@ -110,6 +110,28 @@ const reactAgentNormalMermaid = `sequenceDiagram
     participant TN as 🔧 tools<br/>(ToolNode 执行)
     participant CK as 💾 MemorySaver<br/>(检查点)
 
+    Note over G,TN: ═══════════ onModuleInit() 初始化阶段 ═══════════
+
+    rect rgb(255, 240, 245)
+        Note over G,TN: ▸ 定义工具 ①：calculatorTool
+        Note right of TN: const calculatorTool = tool(<br/>  async ({ expression }) => {<br/>    return Function("...(expression)")()<br/>  },<br/>  {<br/>    name: "calculator",<br/>    description: "计算数学表达式",<br/>    schema: z.object({<br/>      expression: z.string()<br/>    })<br/>  }<br/>)
+    end
+
+    rect rgb(240, 255, 245)
+        Note over G,TN: ▸ 定义工具 ②：weatherTool (Mock)
+        Note right of TN: const weatherTool = tool(<br/>  async ({ city }) => {<br/>    mock = { "北京":"晴，25°C",<br/>             "上海":"多云，28°C",<br/>             "武汉":"晴，30°C",<br/>             "广州":"雷阵雨，32°C" }<br/>    return mock[city] ?? "晴，22°C"<br/>  },<br/>  {<br/>    name: "get_weather",<br/>    description: "查询城市天气",<br/>    schema: z.object({<br/>      city: z.string()<br/>    })<br/>  }<br/>)
+    end
+
+    rect rgb(255, 248, 230)
+        Note over G: const tools = [calculatorTool, weatherTool]
+        G->>CM: llm.bindTools(tools)
+        Note right of CM: bindTools 将工具的<br/>name/description/schema<br/>注入 LLM 上下文<br/>→ LLM 知道何时调用哪个工具
+        G->>TN: const toolNode = new ToolNode(tools)
+        Note right of TN: ToolNode 封装<br/>工具调用的执行逻辑
+    end
+
+    Note over U,CK: ═══════════ 初始化完成，等待用户调用 ═══════════
+
     U->>G: chat(threadId, "北京和上海今天哪个城市更热？")
     G->>CK: 通过 thread_id 恢复历史消息
     CK-->>G: 返回 []
@@ -117,7 +139,7 @@ const reactAgentNormalMermaid = `sequenceDiagram
     rect rgb(255, 245, 230)
         Note over G,CM: ═══ 第 1 轮 callModel ═══<br/>state.messages = [SystemMessage(工具说明), HumanMessage(用户问题)]
         G->>CM: llmWithTools.invoke(messages)
-        CM->>CM: LLM 推理 → 决定调用工具
+        CM->>CM: LLM 推理:<br/>需要查询天气 → 调用 get_weather
         CM-->>G: AIMessage ① returned
         Note right of CM: 📤 响应 ①（调了工具！）<br/>id: "chatcmpl-983"<br/>content: "我需要查询这两个城市的<br/>天气...首先查询北京的天气"<br/>tool_calls: [<br/>  {name:"get_weather",<br/>   args:{city:"北京"},<br/>   id:"call_bjgwhm6e"},<br/>  {name:"get_weather",<br/>   args:{city:"上海"},<br/>   id:"call_dyssaw4r"}<br/>]<br/>finish_reason: "tool_calls"<br/>tokens: 236+88=324
     end
@@ -131,10 +153,10 @@ const reactAgentNormalMermaid = `sequenceDiagram
 
     rect rgb(245, 255, 245)
         Note over G,TN: ═══ 工具执行阶段 ═══
-        G->>TN: ToolNode 解析 tool_calls<br/>→ 并行执行 2 个工具
-        TN->>TN: ① get_weather({city:"北京"})
+        G->>TN: ToolNode 解析 tool_calls<br/>→ 并行执行 weatherTool × 2
+        TN->>TN: ① weatherTool({city:"北京"})
         Note right of TN: ToolMessage<br/>name: "get_weather"<br/>tool_call_id: "call_bjgwhm6e"<br/>content: "晴，25°C，东北风 3 级"
-        TN->>TN: ② get_weather({city:"上海"})
+        TN->>TN: ② weatherTool({city:"上海"})
         Note right of TN: ToolMessage<br/>name: "get_weather"<br/>tool_call_id: "call_dyssaw4r"<br/>content: "多云，28°C，东风 2 级"
         TN-->>G: 追加 2 个 ToolMessage 到 messages
     end

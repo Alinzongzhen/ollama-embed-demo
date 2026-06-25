@@ -56,6 +56,8 @@ const calculatorTool = tool(
  */
 const weatherTool = tool(
   async ({ city }) => {
+    // 归一化城市名：去掉"市""省"等后缀（兼容"北京市"→"北京"）
+    const normalized = city.replace(/[省市]$/, '')
     // Mock 天气数据，实际项目应替换为真实天气 API 调用
     const mock: Record<string, string> = {
       '北京': '晴，25°C，东北风 3 级',
@@ -64,7 +66,7 @@ const weatherTool = tool(
       '广州': '雷阵雨，32°C，南风 2 级',
     }
     // 若城市不在 Mock 数据中，返回默认天气提示
-    return mock[city] ?? `${city}：晴，22°C，微风`
+    return mock[normalized] ?? `${city}：晴，22°C，微风`
   },
   {
     name:        'get_weather',                            // 工具名称
@@ -127,10 +129,11 @@ export class ReactAgentService implements OnModuleInit {
     const callModel = async (state: typeof MessagesAnnotation.State) => {
       // 构建消息列表：系统提示词 + 历史对话消息
       const messages = [
-        new SystemMessage(`你是专业助手，可用工具：
-- calculator：数学计算
-- get_weather：查询天气
-根据问题决定是否调用工具。`),
+        new SystemMessage(`你是专业助手。你必须严格遵守以下规则：
+1. 当用户询问天气时，必须调用 get_weather 工具查询，禁止编造或拒绝
+2. 当用户要求数学计算时，必须调用 calculator 工具
+3. 不要猜测或编造数据，所有事实数据必须通过工具获取
+4. 工具返回结果后，基于结果用中文给出简洁回答`),
         ...state.messages,  // 包含用户历史消息、之前的工具调用结果等
       ]
       // 调用绑定了工具的 LLM，获取响应（可能是文本答案或 tool_calls）
