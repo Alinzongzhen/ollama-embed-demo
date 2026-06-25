@@ -16,6 +16,7 @@ import {
 import { ToolNode } from '@langchain/langgraph/prebuilt'// 工具节点，用于调用工具
 import { tool }     from '@langchain/core/tools'// 工具定义，用于创建可调用的函数
 import { AIMessage, HumanMessage, SystemMessage } from '@langchain/core/messages'
+import { RunnableConfig } from '@langchain/core/runnables'// 运行时配置接口
 import { z } from 'zod'// 数据验证库，用于定义工具参数 schema
 import { config } from '../config'// 配置文件，包含 API 密钥等
 
@@ -54,9 +55,27 @@ const calculatorTool = tool(
  * @param city - 城市名，如：北京、上海、武汉、广州
  * @returns 该城市的天气描述字符串
  */
+/**
+ * 工具级缓存：按 threadId + 城市 缓存，不同用户不同会话互相隔离
+ * 同一会话同一城市不重复调 API
+ */
+const weatherCache = new Map<string, { result: string; time: number }>()
+const CACHE_TTL = 5 * 60 * 1000 // 5 分钟
+
 const weatherTool = tool(
-  async ({ city }) => {
-    console.log(`🌤️ [weatherTool] 收到请求 city="${city}"`)
+  async ({ city }, config?: RunnableConfig) => {
+    // 从运行时 config 中提取 threadId，实现线程级缓存隔离
+    const threadId = (config?.configurable as any)?.thread_id as string || '_global_'
+    const cacheKey = `${threadId}::${city}`
+    console.log(`🌤️ [weatherTool] 收到请求 city="${city}", threadId="${threadId}"`)
+
+    // 检查缓存：同一 thread 同一城市 5 分钟内不重复调 API
+    const cached = weatherCache.get(cacheKey)
+    if (cached && Date.now() - cached.time < CACHE_TTL) {
+      console.log(`🌤️ [weatherTool] 命中缓存(${threadId})，跳过 API → "${cached.result}"`)
+      return `[缓存] ${cached.result}`
+    }
+
     try {
       // 1. 地理编码：城市名 → 经纬度（Open-Meteo Geocoding API，免费无 Key）
       const geoUrl = `https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(city)}&count=1&language=zh`
@@ -90,6 +109,9 @@ const weatherTool = tool(
 
       const result = `${name || city}：${desc}，${current.temperature_2m}°C，`
         + `湿度${current.relative_humidity_2m}%，风速${current.wind_speed_10m}km/h`
+
+      // 写入缓存（按 threadId + 城市）
+      weatherCache.set(cacheKey, { result, time: Date.now() })
       console.log(`🌤️ [weatherTool] 结果="${result}"`)
       return result
     } catch (e: any) {
@@ -186,13 +208,16 @@ export class ReactAgentService implements OnModuleInit {
      * LLM 可能返回普通文本答案，也可能返回 tool_calls 请求
      */
     const callModel = async (state: typeof MessagesAnnotation.State) => {
+      // 打印上下文消息数量，确认 MemorySaver 是否生效
+      console.log(`📨 [callModel] 当前上下文消息数: ${state.messages.length}`)
       // 构建消息列表：系统提示词 + 历史对话消息
       const messages = [
         new SystemMessage(`你是专业助手。你必须严格遵守以下规则：
-1. 当用户询问天气时，必须调用 get_weather 工具查询，禁止编造或拒绝
-2. 当用户要求数学计算时，必须调用 calculator 工具
-3. 不要猜测或编造数据，所有事实数据必须通过工具获取
-4. 工具返回结果后，基于结果用中文给出简洁回答`),
+1. 当用户询问天气时，优先查看对话历史中是否已有 tool 返回的天气数据；若有且用户问题相同，直接引用历史数据回答，无需重复调用工具
+2. 若历史中没有该城市的天气数据，或用户询问的是新城市，则必须调用 get_weather 工具查询
+3. 当用户要求数学计算时，必须调用 calculator 工具
+4. 不要猜测或编造数据，所有事实数据必须通过工具获取或从历史对话中引用
+5. 工具返回结果后，基于结果用中文给出简洁回答`),
         ...state.messages,  // 包含用户历史消息、之前的工具调用结果等
       ]
       // 调用绑定了工具的 LLM，获取响应（可能是文本答案或 tool_calls）
