@@ -16,7 +16,7 @@ import {
 import { ToolNode } from '@langchain/langgraph/prebuilt'// 工具节点，用于调用工具
 import { tool }     from '@langchain/core/tools'// 工具定义，用于创建可调用的函数
 import { AIMessage, HumanMessage, SystemMessage } from '@langchain/core/messages'
-import { RunnableConfig } from '@langchain/core/runnables'// 运行时配置接口
+import { RunnableConfig } from '@langchain/core/runnables'// 运行时配置，用于传递 threadId 等信息
 import { z } from 'zod'// 数据验证库，用于定义工具参数 schema
 import { config } from '../config'// 配置文件，包含 API 密钥等
 
@@ -223,6 +223,13 @@ export class ReactAgentService implements OnModuleInit {
       // 调用绑定了工具的 LLM，获取响应（可能是文本答案或 tool_calls）
       const response = await llmWithTools.invoke(messages)
     
+      // 打印 token 消耗（Ollama ChatOpenAI 兼容模式下通过 response_metadata 返回）
+      const tokenUsage = (response as any).response_metadata?.tokenUsage
+        || (response as any).usage_metadata
+      if (tokenUsage) {
+        console.log(`📊 [callModel] Token消耗: 输入=${tokenUsage.input_tokens ?? tokenUsage.promptTokens}, 输出=${tokenUsage.output_tokens ?? tokenUsage.completionTokens}, 总计=${tokenUsage.total_tokens ?? tokenUsage.totalTokens}`)
+      }
+
       const toolCalls = (response as AIMessage).tool_calls// 从 LLM 响应中提取 tool_calls 数组
       if (toolCalls?.length) {
         console.log(`🔧 [callModel] LLM 请求调用 ${toolCalls.length} 个工具：`, 
@@ -285,6 +292,8 @@ export class ReactAgentService implements OnModuleInit {
    * @returns LLM 最终回复的文本内容
    */
   async chat(threadId: string, message: string): Promise<string> {
+    console.log(`\n🚀 [chat] ══════════════════════════════════════`)
+    console.log(`🚀 [chat] threadId="${threadId}", 用户输入: "${message}"`)
     // 执行状态图，传入用户消息和运行时配置
     const result = await this.graph.invoke(
       { messages: [new HumanMessage(message)] },
@@ -293,7 +302,21 @@ export class ReactAgentService implements OnModuleInit {
         recursionLimit: 20,   // 最多允许 20 次节点跳转（LLM↔工具循环），防止死循环
       }
     )
-    console.log('result', result)
+
+    // 汇总本次执行所有 LLM 调用的 token 消耗
+    let totalInput = 0, totalOutput = 0
+    const allMsgs = result.messages as any[]
+    allMsgs.forEach((m: any) => {
+      const tu = m.response_metadata?.tokenUsage || m.usage_metadata
+      if (tu) {
+        totalInput  += tu.input_tokens  ?? tu.promptTokens     ?? 0
+        totalOutput += tu.output_tokens ?? tu.completionTokens ?? 0
+      }
+    })
+    console.log(`📊 [chat] 本轮总Token: 输入=${totalInput}, 输出=${totalOutput}, 合计=${totalInput + totalOutput}`)
+    console.log(`📊 [chat] 上下文消息总数: ${allMsgs.length}`)
+    console.log(`🚀 [chat] ══════════════════════════════════════\n`)
+
     // 返回最终消息的内容（最后一条消息即 LLM 的最终答案）
     return result.messages.at(-1).content as string
   }
