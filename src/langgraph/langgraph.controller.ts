@@ -22,7 +22,7 @@ export class LanggraphController {
   }
   @Post('memory-chat')
   async memoryChat(@Body() body: { message: string, threadId:string }) {
-    return (await this.svc.memoryChat(body.message, body.threadId).then(answer => (answer)) ) 
+    return (await this.svc.memoryChat(body.message, body.threadId).then(answer => ({answer})) ) 
   }
   
   @Get('history/:threadId')
