@@ -1,0 +1,113 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 520" font-family="Microsoft YaHei, sans-serif">
+  <defs>
+    <marker id="arrow" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+      <polygon points="0 0, 10 3.5, 0 7" fill="#555"/>
+    </marker>
+    <marker id="arrow-loop" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+      <polygon points="0 0, 10 3.5, 0 7" fill="#888"/>
+    </marker>
+    <filter id="shadow" x="-5%" y="-5%" width="115%" height="115%">
+      <feDropShadow dx="1" dy="2" stdDeviation="2" flood-opacity="0.15"/>
+    </filter>
+  </defs>
+
+  <!-- 标题 -->
+  <text x="450" y="32" text-anchor="middle" font-size="20" font-weight="bold" fill="#333">Supervisor 多 Agent 编排图</text>
+  <text x="450" y="54" text-anchor="middle" font-size="12" fill="#999">START → supervisor → 流水线 → FINISH → END</text>
+
+  <!-- ====== START 节点 ====== -->
+  <rect x="370" y="72" width="100" height="36" rx="18" ry="18" fill="#4CAF50" filter="url(#shadow)"/>
+  <text x="420" y="95" text-anchor="middle" font-size="14" font-weight="bold" fill="#fff">START</text>
+
+  <!-- START → supervisor -->
+  <line x1="420" y1="108" x2="420" y2="130" stroke="#555" stroke-width="2" marker-end="url(#arrow)"/>
+
+  <!-- ====== Supervisor 节点 ====== -->
+  <polygon points="420,132 480,155 480,185 420,208 360,185 360,155" fill="#FF9800" filter="url(#shadow)"/>
+  <text x="420" y="169" text-anchor="middle" font-size="13" font-weight="bold" fill="#fff">supervisor</text>
+  <text x="420" y="185" text-anchor="middle" font-size="9" fill="#fff">调度者</text>
+
+  <!-- Supervisor 条件路由标注 -->
+  <text x="480" y="175" font-size="9" fill="#888">条件路由</text>
+
+  <!-- ====== 三个分支线 ====== -->
+  <!-- Supervisor → researcher（向上） -->
+  <path d="M 360,155 Q 280,155 260,180 L 260,280" stroke="#1976D2" stroke-width="2" fill="none" marker-end="url(#arrow)"/>
+  <text x="280" y="220" font-size="9" fill="#1976D2">派发</text>
+
+  <!-- Supervisor → analyst（水平） -->
+  <line x1="420" y1="208" x2="420" y2="280" stroke="#7B1FA2" stroke-width="2" marker-end="url(#arrow)"/>
+  <text x="430" y="245" font-size="9" fill="#7B1FA2">派发</text>
+
+  <!-- Supervisor → writer（向下偏右） -->
+  <path d="M 480,185 Q 560,185 580,215 L 580,280" stroke="#E91E63" stroke-width="2" fill="none" marker-end="url(#arrow)"/>
+  <text x="540" y="220" font-size="9" fill="#E91E63">派发</text>
+
+  <!-- Supervisor → FINISH -->
+  <path d="M 480,155 Q 560,155 580,130 L 720,130 L 720,90" stroke="#555" stroke-width="1.5" fill="none" marker-end="url(#arrow)"/>
+  <text x="640" y="145" font-size="9" fill="#888">全部完成</text>
+
+  <!-- ====== Researcher 节点 ====== -->
+  <rect x="190" y="282" width="140" height="48" rx="8" ry="8" fill="#1976D2" filter="url(#shadow)"/>
+  <text x="260" y="304" text-anchor="middle" font-size="14" font-weight="bold" fill="#fff">🔍 researcher</text>
+  <text x="260" y="322" text-anchor="middle" font-size="10" fill="#BBDEFB">收集信息 / 搜索资料</text>
+
+  <!-- Researcher → supervisor 回路 -->
+  <path d="M 190,306 Q 160,306 140,290 L 140,130 L 360,130" stroke="#888" stroke-width="1.5" stroke-dasharray="5,3" fill="none" marker-end="url(#arrow-loop)"/>
+  <text x="130" y="200" font-size="8" fill="#999">回报</text>
+
+  <!-- ====== Analyst 节点 ====== -->
+  <rect x="350" y="282" width="140" height="48" rx="8" ry="8" fill="#7B1FA2" filter="url(#shadow)"/>
+  <text x="420" y="304" text-anchor="middle" font-size="14" font-weight="bold" fill="#fff">📊 analyst</text>
+  <text x="420" y="322" text-anchor="middle" font-size="10" fill="#E1BEE7">数据分析 / 逻辑推理</text>
+
+  <!-- Analyst → supervisor 回路 -->
+  <path d="M 420,282 L 420,245 Q 420,230 440,230 L 440,208" stroke="#888" stroke-width="1.5" stroke-dasharray="5,3" fill="none" marker-end="url(#arrow-loop)"/>
+  <text x="450" y="250" font-size="8" fill="#999">回报</text>
+
+  <!-- ====== Writer 节点 ====== -->
+  <rect x="510" y="282" width="140" height="48" rx="8" ry="8" fill="#E91E63" filter="url(#shadow)"/>
+  <text x="580" y="304" text-anchor="middle" font-size="14" font-weight="bold" fill="#fff">✏️ writer</text>
+  <text x="580" y="322" text-anchor="middle" font-size="10" fill="#F8BBD0">撰写报告 / 优化表达</text>
+
+  <!-- Writer → supervisor 回路 -->
+  <path d="M 580,282 L 580,260 Q 580,230 560,230 L 480,185" stroke="#888" stroke-width="1.5" stroke-dasharray="5,3" fill="none" marker-end="url(#arrow-loop)"/>
+  <text x="540" y="250" font-size="8" fill="#999">回报</text>
+
+  <!-- ====== FINISH / END 节点 ====== -->
+  <rect x="720" y="72" width="80" height="36" rx="8" ry="8" fill="#9E9E9E" filter="url(#shadow)"/>
+  <text x="760" y="95" text-anchor="middle" font-size="13" font-weight="bold" fill="#fff">FINISH</text>
+
+  <!-- FINISH → END -->
+  <line x1="760" y1="108" x2="760" y2="135" stroke="#555" stroke-width="2" marker-end="url(#arrow)"/>
+
+  <circle cx="760" cy="150" r="18" fill="#F44336" filter="url(#shadow)"/>
+  <text x="760" y="155" text-anchor="middle" font-size="12" font-weight="bold" fill="#fff">END</text>
+
+  <!-- ====== 图例 ====== -->
+  <rect x="20" y="370" width="240" height="138" rx="6" fill="#FAFAFA" stroke="#E0E0E0"/>
+  <text x="35" y="392" font-size="12" font-weight="bold" fill="#555">图例</text>
+  
+  <circle cx="35" cy="410" r="5" fill="#4CAF50"/>
+  <text x="50" y="414" font-size="10" fill="#666">START / END — 图入口与出口</text>
+  
+  <polygon points="35,427 40,431 40,435 35,439 30,435 30,431" fill="#FF9800"/>
+  <text x="50" y="436" font-size="10" fill="#666">supervisor — 调度者（代码逻辑路由）</text>
+  
+  <rect x="30" y="446" width="10" height="10" rx="2" fill="#1976D2"/>
+  <text x="50" y="455" font-size="10" fill="#666">researcher / analyst / writer</text>
+
+  <line x1="35" y1="472" x2="65" y2="472" stroke="#555" stroke-width="1.5"/>
+  <text x="75" y="476" font-size="10" fill="#666">实线 = 前向边</text>
+
+  <line x1="35" y1="490" x2="65" y2="490" stroke="#888" stroke-width="1.5" stroke-dasharray="5,3"/>
+  <text x="75" y="494" font-size="10" fill="#666">虚线 = Worker 回报 supervisor</text>
+
+  <!-- ====== 流水线说明 ====== -->
+  <rect x="280" y="370" width="320" height="80" rx="6" fill="#FFF3E0" stroke="#FFB74D"/>
+  <text x="300" y="392" font-size="12" font-weight="bold" fill="#E65100">执行流水线（严格顺序）</text>
+  <text x="300" y="412" font-size="11" fill="#555">① researcher 收集信息 → supervisor 接收结果</text>
+  <text x="300" y="430" font-size="11" fill="#555">② analyst  分析推理 → supervisor 接收结果</text>
+  <text x="300" y="448" font-size="11" fill="#555">③ writer   撰写报告 → supervisor → FINISH</text>
+
+</svg>
