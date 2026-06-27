@@ -1,0 +1,159 @@
+﻿<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1020 670" font-family="Microsoft YaHei, sans-serif">
+  <defs>
+    <marker id="arrow" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+      <polygon points="0 0, 10 3.5, 0 7" fill="#555"/>
+    </marker>
+    <marker id="arrow-loop" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+      <polygon points="0 0, 10 3.5, 0 7" fill="#888"/>
+    </marker>
+    <filter id="shadow" x="-5%" y="-5%" width="115%" height="115%">
+      <feDropShadow dx="1" dy="2" stdDeviation="2" flood-opacity="0.15"/>
+    </filter>
+  </defs>
+
+  <!-- ========== 标题 ========== -->
+  <text x="350" y="30" text-anchor="middle" font-size="20" font-weight="bold" fill="#333">Supervisor 多 Agent 编排图</text>
+  <text x="350" y="52" text-anchor="middle" font-size="12" fill="#999">START → supervisor → 流水线 → FINISH → END</text>
+
+  <!-- ========== 左侧：图结构 ========== -->
+
+  <!-- START 节点 -->
+  <rect x="270" y="70" width="100" height="36" rx="18" ry="18" fill="#4CAF50" filter="url(#shadow)"/>
+  <text x="320" y="93" text-anchor="middle" font-size="14" font-weight="bold" fill="#fff">START</text>
+
+  <!-- START → supervisor -->
+  <line x1="320" y1="106" x2="320" y2="128" stroke="#555" stroke-width="2" marker-end="url(#arrow)"/>
+
+  <!-- Supervisor 节点（六边形） -->
+  <polygon points="320,130 380,153 380,183 320,206 260,183 260,153" fill="#FF9800" filter="url(#shadow)"/>
+  <text x="320" y="167" text-anchor="middle" font-size="13" font-weight="bold" fill="#fff">supervisor</text>
+  <text x="320" y="183" text-anchor="middle" font-size="9" fill="#fff">调度者</text>
+
+  <!-- 条件路由标注 -->
+  <text x="385" y="172" font-size="9" fill="#888">条件路由</text>
+
+  <!-- Supervisor → researcher -->
+  <path d="M 260,153 Q 180,153 160,175 L 160,275" stroke="#1976D2" stroke-width="2" fill="none" marker-end="url(#arrow)"/>
+  <text x="175" y="215" font-size="9" fill="#1976D2">派发</text>
+
+  <!-- Supervisor → analyst -->
+  <line x1="320" y1="206" x2="320" y2="275" stroke="#7B1FA2" stroke-width="2" marker-end="url(#arrow)"/>
+  <text x="330" y="242" font-size="9" fill="#7B1FA2">派发</text>
+
+  <!-- Supervisor → writer -->
+  <path d="M 380,153 Q 460,153 480,175 L 480,275" stroke="#E91E63" stroke-width="2" fill="none" marker-end="url(#arrow)"/>
+  <text x="440" y="215" font-size="9" fill="#E91E63">派发</text>
+
+  <!-- Supervisor → FINISH -->
+  <path d="M 380,130 Q 460,110 520,100 L 520,80 L 570,80" stroke="#555" stroke-width="1.5" fill="none" marker-end="url(#arrow)"/>
+  <text x="480" y="115" font-size="9" fill="#888">全部完成</text>
+
+  <!-- Researcher 节点 -->
+  <rect x="90" y="277" width="140" height="48" rx="8" ry="8" fill="#1976D2" filter="url(#shadow)"/>
+  <text x="160" y="299" text-anchor="middle" font-size="14" font-weight="bold" fill="#fff">🔍 researcher</text>
+  <text x="160" y="317" text-anchor="middle" font-size="10" fill="#BBDEFB">收集信息 / 搜索资料</text>
+
+  <!-- Researcher → supervisor 回路 -->
+  <path d="M 90,301 Q 60,301 40,285 L 40,125 L 260,153" stroke="#888" stroke-width="1.5" stroke-dasharray="5,3" fill="none" marker-end="url(#arrow-loop)"/>
+  <text x="35" y="200" font-size="8" fill="#999">回报</text>
+
+  <!-- Analyst 节点 -->
+  <rect x="250" y="277" width="140" height="48" rx="8" ry="8" fill="#7B1FA2" filter="url(#shadow)"/>
+  <text x="320" y="299" text-anchor="middle" font-size="14" font-weight="bold" fill="#fff">📊 analyst</text>
+  <text x="320" y="317" text-anchor="middle" font-size="10" fill="#E1BEE7">数据分析 / 逻辑推理</text>
+
+  <!-- Analyst → supervisor 回路 -->
+  <path d="M 320,277 L 320,240 Q 320,225 340,225 L 380,183" stroke="#888" stroke-width="1.5" stroke-dasharray="5,3" fill="none" marker-end="url(#arrow-loop)"/>
+  <text x="350" y="248" font-size="8" fill="#999">回报</text>
+
+  <!-- Writer 节点 -->
+  <rect x="410" y="277" width="140" height="48" rx="8" ry="8" fill="#E91E63" filter="url(#shadow)"/>
+  <text x="480" y="299" text-anchor="middle" font-size="14" font-weight="bold" fill="#fff">✏️ writer</text>
+  <text x="480" y="317" text-anchor="middle" font-size="10" fill="#F8BBD0">撰写报告 / 优化表达</text>
+
+  <!-- Writer → supervisor 回路 -->
+  <path d="M 480,277 L 480,255 Q 480,225 460,225 L 380,183" stroke="#888" stroke-width="1.5" stroke-dasharray="5,3" fill="none" marker-end="url(#arrow-loop)"/>
+  <text x="440" y="248" font-size="8" fill="#999">回报</text>
+
+  <!-- FINISH 节点 -->
+  <rect x="570" y="68" width="80" height="36" rx="8" ry="8" fill="#9E9E9E" filter="url(#shadow)"/>
+  <text x="610" y="91" text-anchor="middle" font-size="13" font-weight="bold" fill="#fff">FINISH</text>
+
+  <!-- END 节点 -->
+  <line x1="610" y1="104" x2="610" y2="130" stroke="#555" stroke-width="2" marker-end="url(#arrow)"/>
+  <circle cx="610" cy="145" r="18" fill="#F44336" filter="url(#shadow)"/>
+  <text x="610" y="150" text-anchor="middle" font-size="12" font-weight="bold" fill="#fff">END</text>
+
+  <!-- 图例 -->
+  <rect x="20" y="370" width="260" height="130" rx="6" fill="#FAFAFA" stroke="#E0E0E0"/>
+  <text x="35" y="392" font-size="12" font-weight="bold" fill="#555">图例</text>
+  <circle cx="35" cy="410" r="5" fill="#4CAF50"/>
+  <text x="50" y="414" font-size="10" fill="#666">START / END — 图入口与出口</text>
+  <polygon points="35,427 40,431 40,435 35,439 30,435 30,431" fill="#FF9800"/>
+  <text x="50" y="436" font-size="10" fill="#666">supervisor — 调度者（代码逻辑路由）</text>
+  <rect x="30" y="446" width="10" height="10" rx="2" fill="#1976D2"/>
+  <text x="50" y="455" font-size="10" fill="#666">researcher / analyst / writer — 专业 Agent</text>
+  <line x1="35" y1="472" x2="65" y2="472" stroke="#555" stroke-width="1.5"/>
+  <text x="75" y="476" font-size="10" fill="#666">实线 = 前向边</text>
+  <line x1="35" y1="490" x2="65" y2="490" stroke="#888" stroke-width="1.5" stroke-dasharray="5,3"/>
+  <text x="75" y="494" font-size="10" fill="#666">虚线 = Worker 回报 supervisor</text>
+
+  <!-- ========== 右侧：提示词面板 ========== -->
+  <rect x="680" y="12" width="330" height="580" rx="8" fill="#1e1e1e"/>
+
+  <!-- 面板标题 -->
+  <text x="695" y="36" font-size="14" font-weight="bold" fill="#FF9800">提示词 SystemMessage</text>
+
+  <!-- Supervisor 提示词 -->
+  <rect x="695" y="48" width="300" height="195" rx="4" fill="#2d2d2d"/>
+  <text x="705" y="66" font-size="11" font-weight="bold" fill="#4FC3F7">🔶 Supervisor（调度者）</text>
+  <text x="705" y="82" font-size="9" fill="#9CDCFE">你是 Supervisor（任务协调者），</text>
+  <text x="705" y="96" font-size="9" fill="#9CDCFE">负责拆解用户请求，指派合适的</text>
+  <text x="705" y="110" font-size="9" fill="#9CDCFE">Agent 处理。</text>
+  <text x="705" y="128" font-size="9" fill="#CE9178">- researcher</text><text x="795" y="128" font-size="9" fill="#9CDCFE">：搜索、收集、整理信息</text>
+  <text x="705" y="142" font-size="9" fill="#CE9178">- analyst</text><text x="795" y="142" font-size="9" fill="#9CDCFE">：计算、推理、数据对比</text>
+  <text x="705" y="156" font-size="9" fill="#CE9178">- writer</text><text x="795" y="156" font-size="9" fill="#9CDCFE">：组织结构化文档</text>
+  <text x="705" y="174" font-size="9" font-weight="bold" fill="#4FC3F7">决策规则：</text>
+  <text x="705" y="188" font-size="9" fill="#6A9955">1. 需要查资料 → researcher</text>
+  <text x="705" y="202" font-size="9" fill="#6A9955">2. 需要分析 → analyst</text>
+  <text x="705" y="216" font-size="9" fill="#6A9955">3. 需要出报告 → writer</text>
+  <text x="705" y="230" font-size="9" fill="#6A9955">4. 闲聊 → FINISH</text>
+  <text x="705" y="244" font-size="9" fill="#6A9955">5. 当前状态：${done}</text>
+
+  <text x="705" y="262" font-size="9" font-weight="bold" fill="#DCDCAA">输出：researcher|analyst|writer|FINISH</text>
+
+  <!-- Researcher 提示词 -->
+  <rect x="695" y="255" width="300" height="60" rx="4" fill="#2d2d2d"/>
+  <text x="705" y="273" font-size="11" font-weight="bold" fill="#BBDEFB">🔍 Researcher（研究员）</text>
+  <text x="705" y="289" font-size="9" fill="#9CDCFE">你是研究员，擅长收集整理信息。</text>
+  <text x="705" y="303" font-size="9" fill="#6A9955">输入：用户原始任务 + 当前上下文</text>
+
+  <!-- Analyst 提示词 -->
+  <rect x="695" y="328" width="300" height="60" rx="4" fill="#2d2d2d"/>
+  <text x="705" y="346" font-size="11" font-weight="bold" fill="#E1BEE7">📊 Analyst（分析师）</text>
+  <text x="705" y="362" font-size="9" fill="#9CDCFE">你是分析师，擅长数据分析和推理。</text>
+  <text x="705" y="376" font-size="9" fill="#6A9955">输入：用户原始任务 + 当前上下文</text>
+
+  <!-- Writer 提示词 -->
+  <rect x="695" y="400" width="300" height="60" rx="4" fill="#2d2d2d"/>
+  <text x="705" y="418" font-size="11" font-weight="bold" fill="#F8BBD0">✏️ Writer（写作专家）</text>
+  <text x="705" y="434" font-size="9" fill="#9CDCFE">你是写作专家，擅长生成清晰报告。</text>
+  <text x="705" y="448" font-size="9" fill="#6A9955">输入：用户原始任务 + 当前上下文</text>
+
+  <!-- Human 模板 -->
+  <rect x="695" y="472" width="300" height="52" rx="4" fill="#2d2d2d"/>
+  <text x="705" y="490" font-size="11" font-weight="bold" fill="#DCDCAA">🙋 HumanMessage（通用模板）</text>
+  <text x="705" y="506" font-size="9" fill="#9CDCFE">任务：${userInput}</text>
+  <text x="705" y="520" font-size="9" fill="#9CDCFE">当前上下文：${最近 4 条消息}</text>
+
+  <!-- 说明 -->
+  <text x="695" y="555" font-size="9" fill="#888">注：输入来自 state 动态注入</text>
+  <text x="695" y="570" font-size="9" fill="#888">Worker 上下文取最近 4 条避免 token 爆炸</text>
+
+
+  <!-- ========== 提示词写作核心公式 ========== -->
+  <rect x="695" y="585" width="300" height="72" rx="6" fill="#1a1a2e" stroke="#FFD54F" stroke-width="1.5"/>
+  <text x="705" y="603" font-size="12" font-weight="bold" fill="#FFD54F">📐 提示词写作核心公式</text>
+  <text x="705" y="623" font-size="11" fill="#fff" font-family="Consolas, monospace">你是谁  +  管谁  +  什么规则  +  输出格式</text>
+  <text x="705" y="643" font-size="8" fill="#888">↓ 角色定义   ↓ 管理范围   ↓ 行为约束   ↓ 产出规范</text>
+</svg>
