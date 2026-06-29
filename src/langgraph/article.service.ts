@@ -5,6 +5,7 @@ import { ChatOpenAI } from '@langchain/openai'
 import { StateGraph, START, END, Annotation } from '@langchain/langgraph'
 import { HumanMessage } from '@langchain/core/messages'
 import { config } from '../config'
+import {ChatOllama} from '@langchain/ollama';
 
 // 自定义 State：定义这个工作流里所有节点共享的数据结构
 const ArticleState = Annotation.Root({
@@ -33,12 +34,19 @@ const ArticleState = Annotation.Root({
     private graph: any
 
     onModuleInit() {
-      const llm = new ChatOpenAI({
-        model:         config.langGraph.model,
-        apiKey:        config.langGraph.apiKey,
-        configuration: { baseURL: config.langGraph.baseURL + '/v1' },
-        temperature:   0.3,    // 摘要任务用低温度，输出更稳定
-      })
+      // const llm = new ChatOpenAI({
+      //   model:         config.langGraph.model,
+      //   apiKey:        config.langGraph.apiKey,
+      //   configuration: { baseURL: config.langGraph.baseURL + '/v1' },
+      //   temperature:   0.3,    // 摘要任务用低温度，输出更稳定
+      // })
+         const llm = new ChatOllama({
+            model: config.langGraph.model, // Ollama 模型名称
+            temperature: config.langGraph.temperature, // 生成文本的随机程度
+            baseUrl: config.langGraph.baseURL, // Ollama 服务器地址
+            think: false, // 是否开启思考模式，开启后模型会先返回一个思考中的消息，等生成完成后再返回最终回答
+            numPredict: 512, // 生成文本的最大 token 数量，512 是一个比较合理的值，可以根据需要调整
+        }); 
 
       // 节点一：提取关键词
       const extractKeywords = async (state: typeof ArticleState.State) => {
@@ -49,7 +57,6 @@ const ArticleState = Annotation.Root({
             `从以下文章提取 5-8 个核心关键词，只输出关键词，逗号分隔，不要其他内容：\n\n${state.article}`
           ),
         ])
-
         const keywords = (res.content as string)
           .split(/[,，]/).map(k => k.trim()).filter(Boolean)/// 1. 中英文按逗号分割，2. 去空格，3. 过滤空字符串
         return {
@@ -76,7 +83,7 @@ const ArticleState = Annotation.Root({
       this.graph = new StateGraph(ArticleState)
         .addNode('extractKeywords', extractKeywords)
         .addNode('generateSummary', generateSummary)
-        .addEdge(START, 'extractKeywords')
+        .addEdge(START, 'extractKeywords')// 串行：先提关键词再生成摘要
         .addEdge('extractKeywords', 'generateSummary')  // 串行：先提关键词再生成摘要
         .addEdge('generateSummary', END)
         .compile()
