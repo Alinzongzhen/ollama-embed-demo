@@ -9,7 +9,7 @@
 // ═══════════════════════════════════════════════════════════════════════
 
 import { Injectable, OnModuleInit } from '@nestjs/common'//
-import { ChatOpenAI } from '@langchain/openai'// OpenAI 模型，用于生成回复
+import { ChatOpenAI } from '@langchain/openai' // OpenAI 模型，Ollama 兼容模式
 import {
   StateGraph, START, END, MessagesAnnotation, MemorySaver,
 } from '@langchain/langgraph'// 状态图，用于定义状态机
@@ -166,10 +166,11 @@ export class ReactAgentService implements OnModuleInit {
   onModuleInit() {
     // ── 初始化 LLM ──
     // temperature=0 保证工具调用场景下输出更确定，减少幻觉
+    // Ollama 的 OpenAI 兼容端点在 /v1 下，baseURL 必须放在 configuration 里
     const llm = new ChatOpenAI({
       model:         config.langGraph.model,
       apiKey:        config.langGraph.apiKey,
-      configuration: { baseURL: config.langGraph.baseURL },
+      configuration: { baseURL: config.langGraph.baseURL + '/v1' }, // http://localhost:11434/v1
       temperature:   0,    // 工具调用用 0 温度，输出更确定
     })
 

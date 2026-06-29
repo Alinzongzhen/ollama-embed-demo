@@ -1,7 +1,7 @@
 // src/langgraph/code-review.service.ts
 
 import { Injectable, OnModuleInit } from '@nestjs/common'
-import { ChatOllama } from '@langchain/ollama'
+import { ChatOpenAI } from '@langchain/openai'
 import { StateGraph, START, END, Annotation, Send, Command } from '@langchain/langgraph'
 import { HumanMessage } from '@langchain/core/messages'
 import { config } from '../config'
@@ -30,12 +30,11 @@ const SingleReviewState = Annotation.Root({
     private graph: any
 
     onModuleInit() {
-      const llm = new ChatOllama({
-        model: config.langGraph.model,
-        temperature: config.langGraph.temperature,
-        baseUrl: config.langGraph.baseURL,
-        think: false,
-        numPredict: 512,
+      const llm = new ChatOpenAI({
+        model:         config.langGraph.model,
+        apiKey:        config.langGraph.apiKey,
+        configuration: { baseURL: config.langGraph.baseURL + '/v1' },
+        temperature:   config.langGraph.temperature,
       })
 
       // 分发节点：用 Send API 同时启动 3 个并行审查实例（安全性 / 性能 / 代码规范）

@@ -1,20 +1,20 @@
 import { Injectable, OnModuleInit } from '@nestjs/common';
-import { ChatOllama } from '@langchain/ollama';
+import { ChatOpenAI } from '@langchain/openai';
 import { StateGraph, MessagesAnnotation, END, START,MemorySaver } from '@langchain/langgraph';
 import { HumanMessage, SystemMessage } from '@langchain/core/messages'
 import { Console } from 'console';
+import { config } from '../config';
 @Injectable()
 export class LanggraphService implements OnModuleInit {
     private simpleGraph: any;
     private memoryGraph: any;
 
     async onModuleInit() {
-        const llm = new ChatOllama({
-            model: 'qwen3.5:0.8b',       // 模型名称换参数高一点模型要不然推理不够
-            baseUrl: 'http://localhost:11434', // Ollama 服务地址
-            temperature: 0.3,            // 生成文本随机性，默认值为 0.7
-            think: false,                // 是否开启思考模式
-            numPredict: 512,             // 生成文本的最大长度，单位为 token
+        const llm = new ChatOpenAI({
+            model: config.langGraph.model,       // 模型名称
+            apiKey: config.langGraph.apiKey,
+            configuration: { baseURL: config.langGraph.baseURL + '/v1' }, // Ollama 兼容端点
+            temperature: config.langGraph.temperature,
         });
 
         const callModel = async (state: typeof MessagesAnnotation.State) => {

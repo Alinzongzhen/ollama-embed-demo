@@ -1,6 +1,5 @@
 import { Injectable, OnModuleInit } from '@nestjs/common'
 import { ChatOpenAI } from '@langchain/openai'
-import {ChatOllama} from '@langchain/ollama';
 import {
   StateGraph, START, END, MessagesAnnotation, Annotation,
 } from '@langchain/langgraph'
@@ -21,20 +20,14 @@ export class SupervisorService implements OnModuleInit {
   private graph: any
 
   onModuleInit() {
-    // const llm = new ChatOpenAI({
-    //   model:         config.langGraph.model,
-    //   apiKey:        config.langGraph.apiKey,
-    //   configuration: { baseURL: config.langGraph.baseURL },
-    //   temperature:   0,
-    // });
-    // 创建 chatOllama 实例
-    const llm = new ChatOllama({
-        model: config.langGraph.model, // Ollama 模型名称
-        temperature: config.langGraph.temperature, // 生成文本的随机程度
-        baseUrl: config.langGraph.baseURL, // Ollama 服务器地址
-        think: false, // 是否开启思考模式，开启后模型会先返回一个思考中的消息，等生成完成后再返回最终回答
-        numPredict: 512, // 生成文本的最大 token 数量，512 是一个比较合理的值，可以根据需要调整
-    }); 
+    // 创建 ChatOpenAI 实例，Ollama 兼容模式
+    const llm = new ChatOpenAI({
+        model:         config.langGraph.model,
+        apiKey:        config.langGraph.apiKey,
+        configuration: { baseURL: config.langGraph.baseURL + '/v1' },
+        temperature:   0,
+    });
+
 
     const supervisor = async (state: typeof SupervisorState.State) => {
       const done = state.completedAgents.length

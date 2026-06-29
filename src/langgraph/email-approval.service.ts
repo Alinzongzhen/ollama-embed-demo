@@ -1,6 +1,5 @@
 import { Injectable, OnModuleInit } from '@nestjs/common'
 import { ChatOpenAI } from '@langchain/openai'
-import { ChatOllama } from '@langchain/ollama'
 import {
   StateGraph, START, END, Annotation,
   MemorySaver, interrupt, Command,
@@ -25,20 +24,12 @@ const EmailState = Annotation.Root({
   private graph: any
 
   onModuleInit() {
-    // const llm = new ChatOpenAI({
-    //   model:         config.langGraph.model,
-    //   apiKey:        config.langGraph.apiKey,
-    //   configuration: { baseURL: config.langGraph.baseURL },
-    //   temperature:   0.7,
-    // })
-    // 创建 chatOllama 实例
-    const llm = new ChatOllama({
-      model: config.ollama.chatModel, // Ollama 模型名称
-      temperature: config.ollama.temperature, // 生成文本的随机程度
-      baseUrl: config.ollama.host, // Ollama 服务器地址
-      think: false, // 是否开启思考模式，开启后模型会先返回一个思考中的消息，等生成完成后再返回最终回答
-      numPredict: 512, // 生成文本的最大 token 数量，512 是一个比较合理的值，可以根据需要调整
-    });
+    const llm = new ChatOpenAI({
+      model:         config.langGraph.model,
+      apiKey:        config.langGraph.apiKey,
+      configuration: { baseURL: config.langGraph.baseURL + '/v1' },
+      temperature:   0.7,
+    })
 
     // ── 节点一：起草邮件 ─────────────────────────────
     // ✅ 节点名改为 draftNode，避免和 State 字段 draftEmail 冲突

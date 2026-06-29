@@ -1,5 +1,5 @@
 import { Injectable, OnModuleInit } from '@nestjs/common';
-import {ChatOllama} from '@langchain/ollama';
+import { ChatOpenAI } from '@langchain/openai';
 import { StateGraph, Annotation, START, END, Send, Command } from '@langchain/langgraph';
 import { config } from '../config';
 import { HumanMessage } from '@langchain/core/messages';
@@ -24,13 +24,12 @@ const SubState = Annotation.Root({
 export class ParallelService implements OnModuleInit {
     private graph: any;
     onModuleInit() {
-        // 创建 chatOllama 实例
-        const llm = new ChatOllama({
-            model: config.ollama.chatModel, // Ollama 模型名称
-            temperature: config.ollama.temperature, // 生成文本的随机程度
-            baseUrl: config.ollama.host, // Ollama 服务器地址
-            think: false, // 是否开启思考模式，开启后模型会先返回一个思考中的消息，等生成完成后再返回最终回答
-            numPredict: 512, // 生成文本的最大 token 数量，512 是一个比较合理的值，可以根据需要调整
+        // 创建 ChatOpenAI 实例，Ollama 兼容模式
+        const llm = new ChatOpenAI({
+            model: config.langGraph.model,
+            apiKey: config.langGraph.apiKey,
+            configuration: { baseURL: config.langGraph.baseURL + '/v1' },
+            temperature: config.langGraph.temperature,
         });
 
 

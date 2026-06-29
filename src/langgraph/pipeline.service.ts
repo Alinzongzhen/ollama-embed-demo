@@ -26,7 +26,7 @@ const PipelineState = Annotation.Root({
       const llm = new ChatOpenAI({
         model:         config.langGraph.model,
         apiKey:        config.langGraph.apiKey,
-        configuration: { baseURL: config.langGraph.baseURL },
+        configuration: { baseURL: config.langGraph.baseURL + '/v1' },
         temperature:   0.7,
       })
 
