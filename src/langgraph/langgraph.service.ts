@@ -1,5 +1,6 @@
 import { Injectable, OnModuleInit } from '@nestjs/common';
 import { ChatOpenAI } from '@langchain/openai';
+import { ChatOllama } from '@langchain/ollama';
 import { StateGraph, MessagesAnnotation, END, START,MemorySaver } from '@langchain/langgraph';
 import { HumanMessage, SystemMessage } from '@langchain/core/messages'
 import { Console } from 'console';
@@ -10,13 +11,19 @@ export class LanggraphService implements OnModuleInit {
     private memoryGraph: any;
 
     async onModuleInit() {
-        const llm = new ChatOpenAI({
-            model: config.langGraph.model,       // 模型名称
-            apiKey: config.langGraph.apiKey,
-            configuration: { baseURL: config.langGraph.baseURL + '/v1' }, // Ollama 兼容端点
-            temperature: config.langGraph.temperature,
-        });
-
+        // const llm = new ChatOpenAI({
+        //     model: config.langGraph.model,       // 模型名称
+        //     apiKey: config.langGraph.apiKey,
+        //     configuration: { baseURL: config.langGraph.baseURL + '/v1' }, // Ollama 兼容端点
+        //     temperature: config.langGraph.temperature,
+        // });
+      const llm = new ChatOllama({
+        model: config.langGraph.model,
+        temperature: config.langGraph.temperature,
+        baseUrl: config.langGraph.baseURL,
+        think: false,
+        numPredict: 512,
+      })
         const callModel = async (state: typeof MessagesAnnotation.State) => {
             const res = await llm.invoke(state.messages);// 调用模型，传入当前状态的消息数组
             return { messages: [res] };// 返回模型回复，封装为数组
