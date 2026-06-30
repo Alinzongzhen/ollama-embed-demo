@@ -1,101 +1,156 @@
 // src/langgraph/article.service.ts
 
 import { Injectable, OnModuleInit } from '@nestjs/common'
-import { ChatOpenAI } from '@langchain/openai'
 import { StateGraph, START, END, Annotation } from '@langchain/langgraph'
 import { HumanMessage } from '@langchain/core/messages'
 import { config } from '../config'
-import {ChatOllama} from '@langchain/ollama';
+import { ChatOllama } from '@langchain/ollama'
 
 // 自定义 State：定义这个工作流里所有节点共享的数据结构
 const ArticleState = Annotation.Root({
-  // 原始文章（输入，各节点只读）
-  article:  Annotation<string>(),
+  // 原始文章（输入，只读）
+  article: Annotation<string>(),
 
-  // 关键词数组（extractKeywords 写入，generateSummary 读取）
-  // reducer 追加：如果并行有多个节点写入，不会互相覆盖
+  // 文章分块数量（batchExtract 写入）
+  chunkCount: Annotation<number>(),
+
+  // 关键词数组（batchExtract 写入原始数据，mergeAndSummarize 去重覆盖）
   keywords: Annotation<string[]>({
-    reducer: (prev, curr) => [...prev, ...curr],
+    reducer: (_, curr) => curr,      // 去重后直接覆盖
     default: () => [],
   }),
 
-    // 最终摘要（generateSummary 写入）
-    summary:  Annotation<string>(),
+  // 各分块的段落摘要（batchExtract 写入，mergeAndSummarize 读取）
+  chunkSummaries: Annotation<string[]>({
+    reducer: (_, curr) => curr,
+    default: () => [],
+  }),
+
+  // 最终摘要（mergeAndSummarize 写入）
+  summary: Annotation<string>(),
 
   // 执行日志（每个节点追加自己的耗时）
-  log:      Annotation<string[]>({
+  log: Annotation<string[]>({
     reducer: (prev, curr) => [...prev, ...curr],
     default: () => [],
   }),
-    })
+})
 
 @Injectable()
   export class ArticleService implements OnModuleInit {
     private graph: any
 
-    onModuleInit() {
-      // const llm = new ChatOpenAI({
-      //   model:         config.langGraph.model,
-      //   apiKey:        config.langGraph.apiKey,
-      //   configuration: { baseURL: config.langGraph.baseURL + '/v1' },
-      //   temperature:   0.3,    // 摘要任务用低温度，输出更稳定
-      // })
-         const llm = new ChatOllama({
-            model: config.langGraph.model, // Ollama 模型名称
-            temperature: config.langGraph.temperature, // 生成文本的随机程度
-            baseUrl: config.langGraph.baseURL, // Ollama 服务器地址
-            think: false, // 是否开启思考模式，开启后模型会先返回一个思考中的消息，等生成完成后再返回最终回答
-            numPredict: 512, // 生成文本的最大 token 数量，512 是一个比较合理的值，可以根据需要调整
-        }); 
+    // 每块最大字符数（约 3000 字符 ≈ 750 token，安全落在 context window 内）
+    private readonly CHUNK_SIZE = 3000;
 
-      // 节点一：提取关键词
-      const extractKeywords = async (state: typeof ArticleState.State) => {
+    onModuleInit() {
+      const llm = new ChatOllama({
+        model: config.langGraph.model,
+        temperature: config.langGraph.temperature,
+        baseUrl: config.langGraph.baseURL,
+        think: false,
+        numPredict: 512,
+      })
+
+      /**
+       * 节点一：分块 → 逐块并行提取关键词 + 段落摘要
+       */
+      const batchExtract = async (state: typeof ArticleState.State) => {
         const t0 = Date.now()
-        const res = await llm.invoke([
-            // 给llm发送提示词
-          new HumanMessage(
-            `从以下文章提取 5-8 个核心关键词，只输出关键词，逗号分隔，不要其他内容：\n\n${state.article}`
-          ),
-        ])
-        const keywords = (res.content as string)
-          .split(/[,，]/).map(k => k.trim()).filter(Boolean)/// 1. 中英文按逗号分割，2. 去空格，3. 过滤空字符串
+        const article = state.article
+
+        // 1. 按 CHUNK_SIZE 切块
+        const chunks: string[] = []
+        for (let i = 0; i < article.length; i += this.CHUNK_SIZE) {
+          chunks.push(article.slice(i, i + this.CHUNK_SIZE))
+        }
+
+        // 2. 并行处理每个分块
+        const results = await Promise.all(
+          chunks.map(async (chunk, idx) => {
+            const res = await llm.invoke([
+              new HumanMessage(
+                `从以下文章片段（第 ${idx + 1}/${chunks.length} 部分）提取 3~5 个核心关键词，并生成一句话段落摘要（不超过50字）。\n\n请严格按以下格式输出：\n关键词：xxx,xxx,xxx\n摘要：xxx\n\n文章片段：\n${chunk}`
+              ),
+            ])
+            return { idx, text: res.content as string }
+          })
+        )
+        // 3. 解析 LLM 输出
+        const allKeywords: string[] = []
+        const chunkSummaries: string[] = new Array(chunks.length).fill('')
+
+        for (const r of results) {
+          const text = r.text
+          const kwMatch = text.match(/关键词[：:]\s*(.+)/)
+          const sumMatch = text.match(/摘要[：:]\s*(.+)/)
+          if (kwMatch) {
+            allKeywords.push(...kwMatch[1].split(/[,，]/).map(k => k.trim()).filter(Boolean))
+          }
+          if (sumMatch) {
+            chunkSummaries[r.idx] = sumMatch[1]
+          }
+        }
+
         return {
-          keywords,
-          log: [`关键词提取完成（${Date.now() - t0}ms）`],
+          chunkCount: chunks.length,
+          keywords: allKeywords,
+          chunkSummaries,
+          log: [`分块提取完成：${chunks.length} 块，${Date.now() - t0}ms`],
         }
       }
 
-      // 节点二：生成摘要
-      // state.keywords 此时已经是 extractKeywords 写入的值
-      const generateSummary = async (state: typeof ArticleState.State) => {
+      /**
+       * 节点二：关键词去重排序 → 用段落摘要合成总摘要
+       */
+      const mergeAndSummarize = async (state: typeof ArticleState.State) => {
         const t0 = Date.now()
+
+        // 1. 关键词按频次排序，取 top 8
+        const freqMap = new Map<string, number>()
+        for (const kw of state.keywords) {
+          freqMap.set(kw, (freqMap.get(kw) || 0) + 1)
+        }
+        const topKeywords = [...freqMap.entries()]
+          .sort((a, b) => b[1] - a[1])
+          .slice(0, 8)
+          .map(([k]) => k)
+
+        // 2. 用各段落摘要合成总摘要
+        const segmentText = state.chunkSummaries
+          .map((s, i) => `[段${i + 1}] ${s}`)
+          .join('\n')
+
         const res = await llm.invoke([
           new HumanMessage(
-            `根据以下文章生成 200 字以内的摘要。\n关键词参考：${state.keywords.join('、')}\n\n文章：\n${state.article}`
+            `根据以下各段落的摘要，整合生成一篇 200 字以内的全文摘要。\n\n关键词参考：${topKeywords.join('、')}\n\n各段落摘要：\n${segmentText}`
           ),
         ])
+
         return {
+          keywords: topKeywords,
           summary: res.content as string,
-          log:     [`摘要生成完成（${Date.now() - t0}ms）`],
+          log: [`汇总摘要完成（${Date.now() - t0}ms）`],
         }
       }
 
       this.graph = new StateGraph(ArticleState)
-        .addNode('extractKeywords', extractKeywords)
-        .addNode('generateSummary', generateSummary)
-        .addEdge(START, 'extractKeywords')// 串行：先提关键词再生成摘要
-        .addEdge('extractKeywords', 'generateSummary')  // 串行：先提关键词再生成摘要
-        .addEdge('generateSummary', END)
+        .addNode('batchExtract', batchExtract)
+        .addNode('mergeAndSummarize', mergeAndSummarize)
+        .addEdge(START, 'batchExtract')
+        .addEdge('batchExtract', 'mergeAndSummarize')
+        .addEdge('mergeAndSummarize', END)
         .compile()
     }
 
     async process(article: string) {
       const result = await this.graph.invoke({ article })
-      console.log(result,999999999)
+      console.log(result, 999999999)
       return {
-        keywords: result.keywords,
-        summary:  result.summary,
-        log:      result.log,
+        keywords:   result.keywords,
+        summary:    result.summary,
+        log:        result.log,
+        chunkCount: result.chunkCount,   // 告知调用方文章被分成了几块
       }
     }
   }
