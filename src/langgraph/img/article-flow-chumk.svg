@@ -1,0 +1,168 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1100 900" font-family="Microsoft YaHei, PingFang SC, sans-serif">
+  <defs>
+    <marker id="arrow" markerWidth="10" markerHeight="7" refX="10" refY="3.5" orient="auto">
+      <polygon points="0 0, 10 3.5, 0 7" fill="#555"/>
+    </marker>
+    <linearGradient id="headerGrad" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0%" stop-color="#667eea"/><stop offset="100%" stop-color="#764ba2"/>
+    </linearGradient>
+    <linearGradient id="startGrad" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0%" stop-color="#43e97b"/><stop offset="100%" stop-color="#38f9d7"/>
+    </linearGradient>
+    <linearGradient id="endGrad" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0%" stop-color="#f093fb"/><stop offset="100%" stop-color="#f5576c"/>
+    </linearGradient>
+    <linearGradient id="nodeGrad" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#667eea"/><stop offset="100%" stop-color="#5a6fd6"/>
+    </linearGradient>
+    <filter id="shadow">
+      <feDropShadow dx="2" dy="3" stdDeviation="4" flood-opacity="0.15"/>
+    </filter>
+  </defs>
+
+  <!-- 标题 -->
+  <rect x="0" y="0" width="1100" height="60" fill="url(#headerGrad)"/>
+  <text x="550" y="38" text-anchor="middle" fill="white" font-size="22" font-weight="bold">ArticleService 工作流设计</text>
+
+  <!-- ====== 流程入口 ====== -->
+  <rect x="400" y="85" width="300" height="48" rx="24" fill="url(#startGrad)" filter="url(#shadow)"/>
+  <text x="550" y="105" text-anchor="middle" fill="white" font-size="14" font-weight="bold">process(article)</text>
+  <text x="550" y="122" text-anchor="middle" fill="white" font-size="11">入口 · 接收完整文章</text>
+
+  <line x1="550" y1="133" x2="550" y2="165" stroke="#555" stroke-width="2" marker-end="url(#arrow)"/>
+
+  <!-- ====== 截断检查 ====== -->
+  <rect x="400" y="170" width="300" height="50" rx="10" fill="#fff3cd" stroke="#ffc107" stroke-width="2" filter="url(#shadow)"/>
+  <text x="550" y="192" text-anchor="middle" fill="#856404" font-size="13" font-weight="bold">graph.invoke({ article })</text>
+  <text x="550" y="210" text-anchor="middle" fill="#856404" font-size="11">传入 StateGraph 工作流</text>
+
+  <line x1="550" y1="220" x2="550" y2="255" stroke="#555" stroke-width="2" marker-end="url(#arrow)"/>
+
+  <!-- ====== START 节点 ====== -->
+  <ellipse cx="550" cy="278" rx="40" ry="22" fill="url(#startGrad)" filter="url(#shadow)"/>
+  <text x="550" y="284" text-anchor="middle" fill="white" font-size="13" font-weight="bold">START</text>
+
+  <line x1="550" y1="300" x2="550" y2="340" stroke="#555" stroke-width="2" marker-end="url(#arrow)"/>
+
+  <!-- ====== batchExtract 节点(大框) ====== -->
+  <rect x="260" y="348" width="580" height="250" rx="14" fill="#f0f4ff" stroke="#667eea" stroke-width="2" filter="url(#shadow)"/>
+  <rect x="260" y="348" width="580" height="38" rx="14" fill="url(#nodeGrad)"/>
+  <rect x="260" y="372" width="580" height="5" fill="url(#nodeGrad)"/>
+  <text x="550" y="373" text-anchor="middle" fill="white" font-size="15" font-weight="bold">batchExtract · 分块 + 并行提取</text>
+
+  <!-- 子步骤1：切块 -->
+  <rect x="290" y="400" width="160" height="60" rx="8" fill="white" stroke="#667eea" stroke-width="1.5"/>
+  <text x="370" y="422" text-anchor="middle" fill="#333" font-size="12" font-weight="bold">1. 按 CHUNK_SIZE 切块</text>
+  <text x="370" y="440" text-anchor="middle" fill="#666" font-size="10">max 3000 字/块</text>
+  <text x="370" y="453" text-anchor="middle" fill="#666" font-size="10">≈ 750 tokens 安全</text>
+
+  <line x1="450" y1="430" x2="490" y2="430" stroke="#555" stroke-width="1.5" marker-end="url(#arrow)"/>
+
+  <!-- 子步骤2：并行调用 -->
+  <rect x="495" y="400" width="160" height="60" rx="8" fill="#fff0f0" stroke="#e74c3c" stroke-width="1.5"/>
+  <text x="575" y="422" text-anchor="middle" fill="#c0392b" font-size="12" font-weight="bold">2. Promise.all</text>
+  <text x="575" y="440" text-anchor="middle" fill="#c0392b" font-size="10">每块并行调 LLM</text>
+  <text x="575" y="453" text-anchor="middle" fill="#c0392b" font-size="10">提取关键词 + 段落摘要</text>
+
+  <line x1="655" y1="430" x2="695" y2="430" stroke="#555" stroke-width="1.5" marker-end="url(#arrow)"/>
+
+  <!-- 子步骤3：解析 -->
+  <rect x="700" y="400" width="120" height="60" rx="8" fill="white" stroke="#667eea" stroke-width="1.5"/>
+  <text x="760" y="422" text-anchor="middle" fill="#333" font-size="12" font-weight="bold">3. 解析结果</text>
+  <text x="760" y="440" text-anchor="middle" fill="#666" font-size="10">正则匹配</text>
+  <text x="760" y="453" text-anchor="middle" fill="#666" font-size="10">关键词/摘要</text>
+
+  <!-- 分块示意 -->
+  <rect x="290" y="478" width="510" height="108" rx="8" fill="#e8f5e9" stroke="#4caf50" stroke-width="1" stroke-dasharray="6,3"/>
+
+  <rect x="305" y="492" width="100" height="36" rx="6" fill="#c8e6c9" stroke="#4caf50" stroke-width="1"/>
+  <text x="355" y="515" text-anchor="middle" fill="#2e7d32" font-size="11" font-weight="bold">Chunk 1</text>
+
+  <text x="420" y="498" fill="#555" font-size="14">➜</text>
+  <text x="440" y="498" fill="#666" font-size="10">LLM</text>
+
+  <rect x="305" y="538" width="100" height="36" rx="6" fill="#c8e6c9" stroke="#4caf50" stroke-width="1"/>
+  <text x="355" y="561" text-anchor="middle" fill="#2e7d32" font-size="11" font-weight="bold">Chunk N</text>
+
+  <text x="420" y="544" fill="#555" font-size="14">➜</text>
+  <text x="440" y="544" fill="#666" font-size="10">LLM</text>
+
+  <text x="500" y="515" fill="#2e7d32" font-size="11">关键词: ["AI","数字化"...]</text>
+  <text x="500" y="533" fill="#2e7d32" font-size="11">摘要:  "本段讨论..."</text>
+
+  <text x="500" y="559" fill="#2e7d32" font-size="11">关键词: ["大模型","风控"...]</text>
+  <text x="500" y="577" fill="#2e7d32" font-size="11">摘要:  "本段讨论..."</text>
+
+  <line x1="550" y1="598" x2="550" y2="630" stroke="#555" stroke-width="2" marker-end="url(#arrow)"/>
+
+  <!-- ====== mergeAndSummarize 节点(大框) ====== -->
+  <rect x="260" y="638" width="580" height="160" rx="14" fill="#f3e5f5" stroke="#9c27b0" stroke-width="2" filter="url(#shadow)"/>
+  <rect x="260" y="638" width="580" height="38" rx="14" fill="#9c27b0"/>
+  <rect x="260" y="662" width="580" height="5" fill="#9c27b0"/>
+  <text x="550" y="663" text-anchor="middle" fill="white" font-size="15" font-weight="bold">mergeAndSummarize · 汇总去重 + 合成总摘要</text>
+
+  <rect x="290" y="688" width="240" height="52" rx="8" fill="white" stroke="#9c27b0" stroke-width="1.5"/>
+  <text x="410" y="708" text-anchor="middle" fill="#6a1b9a" font-size="12" font-weight="bold">1. 关键词频次排序 → Top 8</text>
+  <text x="410" y="726" text-anchor="middle" fill="#666" font-size="10">{"AI":3, "数字化":2, ...}</text>
+
+  <line x1="530" y1="714" x2="570" y2="714" stroke="#555" stroke-width="1.5" marker-end="url(#arrow)"/>
+
+  <rect x="575" y="688" width="250" height="52" rx="8" fill="white" stroke="#9c27b0" stroke-width="1.5"/>
+  <text x="700" y="708" text-anchor="middle" fill="#6a1b9a" font-size="12" font-weight="bold">2. 段落摘要 → LLM 合成</text>
+  <text x="700" y="726" text-anchor="middle" fill="#666" font-size="10">[段1] xxx  [段2] xxx  →  200 字总摘要</text>
+
+  <!-- 输出标注 -->
+  <rect x="410" y="752" width="280" height="38" rx="8" fill="#e1bee7" stroke="#9c27b0" stroke-width="1"/>
+  <text x="550" y="776" text-anchor="middle" fill="#6a1b9a" font-size="12" font-weight="bold">产出: topKeywords[] + summary</text>
+
+  <line x1="550" y1="798" x2="550" y2="830" stroke="#555" stroke-width="2" marker-end="url(#arrow)"/>
+
+  <!-- ====== END 节点 ====== -->
+  <ellipse cx="550" cy="853" rx="40" ry="22" fill="url(#endGrad)" filter="url(#shadow)"/>
+  <text x="550" y="859" text-anchor="middle" fill="white" font-size="13" font-weight="bold">END</text>
+
+  <!-- ====== 状态栏 ====== -->
+  <rect x="20" y="72" width="200" height="200" rx="10" fill="#fafafa" stroke="#ddd" stroke-width="1"/>
+  <text x="120" y="95" text-anchor="middle" fill="#333" font-size="13" font-weight="bold">📦 State 数据流</text>
+  <line x1="40" y1="105" x2="200" y2="105" stroke="#ddd" stroke-width="1"/>
+
+  <text x="35" y="125" fill="#333" font-size="11" font-weight="bold">article</text>
+  <text x="120" y="125" fill="#666" font-size="10">▶ 输入（只读）</text>
+
+  <text x="35" y="148" fill="#333" font-size="11" font-weight="bold">chunkCount</text>
+  <text x="120" y="148" fill="#666" font-size="10">▶ batchExtract 写入</text>
+
+  <text x="35" y="171" fill="#333" font-size="11" font-weight="bold">keywords[]</text>
+  <text x="120" y="171" fill="#666" font-size="10">▶ merge 去重覆盖</text>
+
+  <text x="35" y="194" fill="#333" font-size="11" font-weight="bold">chunkSummaries[]</text>
+  <text x="120" y="194" fill="#666" font-size="10">▶ merge 读取</text>
+
+  <text x="35" y="217" fill="#333" font-size="11" font-weight="bold">summary</text>
+  <text x="120" y="217" fill="#666" font-size="10">▶ merge 写入</text>
+
+  <text x="35" y="240" fill="#333" font-size="11" font-weight="bold">log[]</text>
+  <text x="120" y="240" fill="#666" font-size="10">▶ 各节点追加</text>
+
+  <!-- ====== 图例 ====== -->
+  <rect x="20" y="300" width="200" height="110" rx="10" fill="#fafafa" stroke="#ddd" stroke-width="1"/>
+  <text x="120" y="322" text-anchor="middle" fill="#333" font-size="12" font-weight="bold">图例</text>
+  <line x1="40" y1="332" x2="200" y2="332" stroke="#ddd" stroke-width="1"/>
+
+  <rect x="35" y="345" width="16" height="16" rx="3" fill="#667eea"/>
+  <text x="60" y="358" fill="#555" font-size="11">LangGraph 节点</text>
+
+  <ellipse cx="43" cy="378" rx="10" ry="8" fill="#43e97b"/>
+  <text x="60" y="382" fill="#555" font-size="11">开始节点</text>
+
+  <ellipse cx="43" cy="398" rx="10" ry="8" fill="#f093fb"/>
+  <text x="60" y="402" fill="#555" font-size="11">结束节点</text>
+
+  <!-- ====== 安全提示 ====== -->
+  <rect x="20" y="445" width="200" height="82" rx="10" fill="#e8f5e9" stroke="#4caf50" stroke-width="1.5"/>
+  <text x="120" y="467" text-anchor="middle" fill="#2e7d32" font-size="12" font-weight="bold">🛡️ Context Window 保护</text>
+  <line x1="40" y1="477" x2="200" y2="477" stroke="#c8e6c9" stroke-width="1"/>
+  <text x="35" y="496" fill="#2e7d32" font-size="10">• 每块 ≤ 3000 字 ≈ 750 token</text>
+  <text x="35" y="514" fill="#2e7d32" font-size="10">• merge 只传摘要，不传原文</text>
+  <text x="35" y="532" fill="#2e7d32" font-size="10">• 永不撑爆 32K 窗口</text>
+</svg>
